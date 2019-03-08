@@ -38,12 +38,8 @@ static void gpio_task(void* arg)
             room_info.status = true;
             xTaskCreate(empyt_check, "empyt_check", 1024, NULL, 0, &empty_check_handle);
         refresh:
-            // room_info.status = gpio_get_level(GPIO_INPUT_IO_0);
-            // ESP_LOGI(TAG, "room status:%d,sum:%d,id:%d", room_info.status, room_info.sum, room_info.id);
             if (lastStatus != room_info.status) {
                 ESP_LOGI(TAG, "room status change %d to %d", lastStatus, room_info.status);
-                // if (lastStatus == 1)
-                //     room_info.sum++;
                 lastStatus = room_info.status;
             }
         }

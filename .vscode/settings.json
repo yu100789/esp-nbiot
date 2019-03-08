@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "sntp.h": "c",
+        "wifi_mqtt_config.h": "c",
+        "gpio_config.h": "c",
+        "esp_system.h": "c",
+        "jtl.h": "c",
+        "uart_config.h": "c",
+        "uart.h": "c",
+        "sdkconfig.h": "c",
+        "queue.h": "c",
+        "app_main.h": "c"
+    }
+}

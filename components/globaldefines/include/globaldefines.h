@@ -21,6 +21,8 @@
 #define WIFI_BAND WIFI_BW_HT20
 #define ROOM_ID 4
 
+// #define FOR_BED
+
 #define ENABLE_JTL_UART 0
 
 #if ENABLE_JTL_UART
@@ -29,9 +31,7 @@
 #define WIFI_LED 2
 #endif
 
-#define ENABLE_NBIOT 1
-#if ENABLE_NBIOT
 #define NBIOT_VERSION 7020
-#endif
+
 
 #endif

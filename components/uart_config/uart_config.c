@@ -5,18 +5,21 @@ static const char* tag_nbiot = "NBIOT";
 static const char* tag_jtl = "JTL";
 static const char* tag = "uart";
 static bool nb_reg = false;
+static EventGroupHandle_t nbiot_event_group;
 static void nbiot_send_task(void* parm);
 static void nbiot_recv_task(void* parm);
 static void nbiot_reg(void* parm);
-bool get_nbreg_status(void) { return nb_reg; }
+EventGroupHandle_t get_nbreg_event(void) { return nbiot_event_group; }
 static void nbiot_reg(void* parm)
 {
     while (!nb_reg) {
-        at_cmd(xQueues.xQueue_nbiot_send, xQueues.xQueue_nbiot_recv, "AT+CRESET\r", NULL, 6000, 0);
+        at_cmd(xQueues.xQueue_nbiot_send, xQueues.xQueue_nbiot_recv, "AT+CRESET\r", NULL, 6000, 0,0);
         vTaskDelay(pdMS_TO_TICKS(10000));
         xQueueReset(xQueues.xQueue_nbiot_recv);
         nb_reg = nbiot_register(xQueues.xQueue_nbiot_send, xQueues.xQueue_nbiot_recv);
     }
+    xEventGroupSetBits(nbiot_event_group,BIT0);
+    set_wifiState(WIFI_MQTT_CONNECTED);
     ESP_LOGI(tag_nbiot, "NBIOT MODULE SUCCESSFULLY REG");
     char data[BUF_SIZE];
     char* mqpub[10];
@@ -47,7 +50,7 @@ static void nbiot_recv_task(void* parm)
 {
     uint8_t fuck[BUF_SIZE + 1];
     while (1) {
-        const int len = uart_read_bytes(UART_NUM_2, fuck, BUF_SIZE, 20 / portTICK_RATE_MS);
+        const int len = uart_read_bytes(UART_NUM_2, fuck, BUF_SIZE, 200 / portTICK_RATE_MS);
         if (len > 0) {
             fuck[len] = 0;
             ESP_LOGI(tag_nbiot, "NBIOT_UART Read %d bytes:'%s'", len, fuck);
@@ -108,7 +111,8 @@ void uart_nbiot_config(void)
     xQueues.xQueue_nbiot_recv = xQueueCreate(5, BUF_SIZE);
     xQueues.xQueue_nbiot_mqtt = xQueueCreate(10, BUF_SIZE);
     ESP_LOGI(tag, "waiting for nbiot bootup");
-    vTaskDelay(pdMS_TO_TICKS(20000));
+    nbiot_event_group = xEventGroupCreate();
+    vTaskDelay(pdMS_TO_TICKS(10000));
     xTaskCreate(nbiot_send_task, "nbiot_send_task", 1024 * 4, NULL, 2, NULL);
     xTaskCreate(nbiot_recv_task, "nbiot_recv_task", 1024 * 8, NULL, 3, NULL);
     xTaskCreate(nbiot_reg, "nbiot_reg", 1024 * 4, NULL, 0, &nbiot_reg_taskHandle);
@@ -116,10 +120,12 @@ void uart_nbiot_config(void)
 void nbiotRestart()
 {
     nb_reg = false;
+    xEventGroupClearBits(nbiot_event_group,BIT0);
     if (nbiot_reg_taskHandle != NULL) {
         vTaskDelete(nbiot_reg_taskHandle);
         nbiot_reg_taskHandle = NULL;
     }
+    set_wifiState(WIFI_DISCONNECT);
     xTaskCreate(nbiot_reg, "nbiot_reg", 1024 * 4, NULL, 0, &nbiot_reg_taskHandle);
 }
 uint8_t crc_high_first(uint8_t* ptr, int len)

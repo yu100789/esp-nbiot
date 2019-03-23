@@ -9,6 +9,7 @@
         "uart.h": "c",
         "sdkconfig.h": "c",
         "queue.h": "c",
-        "app_main.h": "c"
+        "app_main.h": "c",
+        "nbiot_cmd.h": "c"
     }
 }

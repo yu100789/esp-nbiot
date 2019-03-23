@@ -27,7 +27,7 @@ void uart_nbiot_config(void);
 uint8_t crc_high_first(uint8_t* ptr, int len);
 unsigned char convert(unsigned char ch);
 void convert_ascii(char* ascii, const char* raw);
-bool get_nbreg_status(void);
+EventGroupHandle_t get_nbreg_event(void);
 void nbiotRestart();
 void get_nbiotTime(char* timedata);
 #endif

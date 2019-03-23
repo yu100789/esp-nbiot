@@ -22,20 +22,6 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
     case MQTT_EVENT_CONNECTED:
         wifistate = WIFI_MQTT_CONNECTED;
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
-        esp_mqtt_client_publish(event->client, connect_status, "connected", 9, 0, 1);
-        vTaskDelay(100);
-        esp_mqtt_client_subscribe(event->client, "/esp32/smartconfig", 0);
-        vTaskDelay(100);
-        esp_mqtt_client_publish(
-            user_client, control_state, "{\"control\":\"0\",\"survive\":\"0\"}", strlen("{\"control\":\"0\",\"survive\":\"0\"}"), 0, 1);
-        vTaskDelay(100);
-        esp_mqtt_client_subscribe(event->client, control_state, 1);
-        vTaskDelay(100);
-        esp_mqtt_client_subscribe(event->client, rules_topic_temperature, 1);
-        vTaskDelay(100);
-        esp_mqtt_client_subscribe(event->client, rules_topic_water, 1);
-        vTaskDelay(100);
-        esp_mqtt_client_subscribe(event->client, heater_power, 1);
         break;
     case MQTT_EVENT_DISCONNECTED:
         wifistate = WIFI_CONNECTED;
@@ -207,7 +193,7 @@ static void smartconfig_example_task(void* parm)
         }
     }
 }
-static void wifi_state_event(void* parm)
+void wifi_state_event(void* parm)
 {
     ESP_ERROR_CHECK(gpio_set_direction(WIFI_LED, GPIO_MODE_OUTPUT));
     ESP_ERROR_CHECK(gpio_set_pull_mode(WIFI_LED, GPIO_PULLUP_ONLY));
@@ -215,34 +201,34 @@ static void wifi_state_event(void* parm)
         switch (wifistate) {
         case WIFI_DISCONNECT:
             vTaskDelay(pdMS_TO_TICKS(3000));
-            gpio_set_level(WIFI_LED, 1);
-            vTaskDelay(pdMS_TO_TICKS(300));
+            gpio_set_level(WIFI_LED, 0);
+            vTaskDelay(pdMS_TO_TICKS(750));
             break;
         case WIFI_CONNECTED:
-            vTaskDelay(pdMS_TO_TICKS(1000));
-            gpio_set_level(WIFI_LED, 1);
-            vTaskDelay(pdMS_TO_TICKS(1000));
+            vTaskDelay(pdMS_TO_TICKS(1250));
+            gpio_set_level(WIFI_LED, 0);
+            vTaskDelay(pdMS_TO_TICKS(1250));
             break;
         case WIFI_MQTT_CONNECTED:
-            vTaskDelay(pdMS_TO_TICKS(500));
-            gpio_set_level(WIFI_LED, 1);
-            vTaskDelay(pdMS_TO_TICKS(500));
+            vTaskDelay(pdMS_TO_TICKS(350));
+            gpio_set_level(WIFI_LED, 0);
+            vTaskDelay(pdMS_TO_TICKS(350));
             break;
         case SMARTCONFIGING:
             vTaskDelay(pdMS_TO_TICKS(100));
-            gpio_set_level(WIFI_LED, 1);
+            gpio_set_level(WIFI_LED, 0);
             vTaskDelay(pdMS_TO_TICKS(100));
             break;
         case SMARTCONFIG_GETTING:
             vTaskDelay(pdMS_TO_TICKS(50));
-            gpio_set_level(WIFI_LED, 1);
+            gpio_set_level(WIFI_LED, 0);
             vTaskDelay(pdMS_TO_TICKS(50));
             break;
         default:
             vTaskDelay(pdMS_TO_TICKS(200));
             break;
         }
-        gpio_set_level(WIFI_LED, 0);
+        gpio_set_level(WIFI_LED, 1);
     }
 }
 void wifi_init(void)
@@ -265,7 +251,6 @@ void wifi_init(void)
     ESP_ERROR_CHECK(esp_wifi_start());
     ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
     ESP_ERROR_CHECK(esp_wifi_set_bandwidth(ESP_IF_WIFI_STA, WIFI_BAND));
-    xTaskCreate(wifi_state_event, "wifi_state", 1024, NULL, 0, NULL);
 }
 const char* get_macAddress(void)
 {
@@ -286,4 +271,5 @@ const char* get_ip(void)
     return gotip;
 }
 int get_wifiState(void) { return wifistate; }
+void set_wifiState(int set_state) { wifistate = set_state; };
 esp_mqtt_client_handle_t getClientHandle(void) { return user_client; }

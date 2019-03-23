@@ -5,14 +5,17 @@ static const char* TAG = "gpio";
 static xQueueHandle gpio_evt_queue = NULL;
 static xQueueHandle room_status_handle = NULL;
 static TaskHandle_t empty_check_handle = NULL;
+static EventGroupHandle_t gpio_event_group;
 static room_t room_info = { false, 0, ROOM_ID };
 room_t get_room_status(void) { return room_info; }
+EventGroupHandle_t get_gpio_event(void) { return gpio_event_group; }
 static void IRAM_ATTR gpio_isr_handler(void* arg)
 {
     uint32_t gpio_num = (uint32_t)arg;
+    room_info.status = !room_info.status;
     xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
 }
-static void empyt_check(void*arg)
+static void empyt_check(void* arg)
 {
     ESP_LOGI(TAG, "empyt check create");
     vTaskDelay(pdMS_TO_TICKS(3600000));
@@ -24,21 +27,20 @@ static void gpio_task(void* arg)
 {
     ESP_LOGI(TAG, "IR Module Ready");
     uint32_t io_num;
-    int lastStatus = 0;
+    int lastStatus = room_info.status = 0;
     for (;;) {
         if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
             ESP_LOGI(TAG, "GPIO[%d] intr, val: %d", io_num, gpio_get_level(io_num));
-            if (room_info.status) {
-                room_info.status = false;
+            if (!room_info.status) {
                 ESP_LOGI(TAG, "empyt check delete");
                 vTaskDelete(empty_check_handle);
                 room_info.sum++;
                 goto refresh;
             }
-            room_info.status = true;
             xTaskCreate(empyt_check, "empyt_check", 1024, NULL, 0, &empty_check_handle);
         refresh:
             if (lastStatus != room_info.status) {
+                xEventGroupSetBits(gpio_event_group, BIT0);
                 ESP_LOGI(TAG, "room status change %d to %d", lastStatus, room_info.status);
                 lastStatus = room_info.status;
             }
@@ -54,6 +56,12 @@ QueueHandle_t room_status_queue(void)
 }
 void gpio_pin_init(void* parm)
 {
+    gpio_event_group = xEventGroupCreate();
+    gpio_set_direction(4, GPIO_MODE_OUTPUT);
+    gpio_set_pull_mode(4, GPIO_FLOATING);
+    gpio_set_level(4, 0);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    gpio_set_level(4, 1);
     room_status_handle = xQueueCreate(100, sizeof(int));
     gpio_config_t io_conf;
     // disable interrupt

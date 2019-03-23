@@ -8,6 +8,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
+#include "freertos/event_groups.h"
 #include "globaldefines.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,5 +24,6 @@ typedef struct room {
     int id;
 } room_t;
 room_t get_room_status(void);
+EventGroupHandle_t get_gpio_event(void);
 QueueHandle_t room_status_queue(void);
 #endif

@@ -34,5 +34,7 @@ void mqtt_send(const char* data, const char* topic, int retain);
 const char* get_macAddress(void);
 const char* get_ip(void);
 int get_wifiState(void);
+void wifi_state_event(void* parm);
+void set_wifiState(int set_state);
 esp_mqtt_client_handle_t getClientHandle(void);
 #endif

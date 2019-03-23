@@ -13,6 +13,7 @@
 #define NO_OF_SAMPLES 64 // Multisampling
 
 typedef struct adc_info {
+    adc_unit_t unit;
     adc_channel_t channel;
     adc_atten_t atten;
     esp_adc_cal_characteristics_t * chars;
@@ -20,6 +21,6 @@ typedef struct adc_info {
     uint32_t raw;
 } adc_info_t;
 
-void AdcMainTask(void *parm);
+void adc_initConfig(void);
 uint32_t get_adc_value(int adc_pin,bool raw_type);
 #endif
